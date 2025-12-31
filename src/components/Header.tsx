@@ -1,8 +1,28 @@
-import { Bell, Menu, User } from "lucide-react";
+import { Bell, Menu, User, LogOut, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 import bellsLogo from "@/assets/bells-logo.jpeg";
+import { useToast } from "@/hooks/use-toast";
 
 const Header = () => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleAuthAction = async () => {
+    if (user) {
+      await signOut();
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out."
+      });
+      navigate("/auth");
+    } else {
+      navigate("/auth");
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-card/80 backdrop-blur-xl">
       <div className="container flex h-16 items-center justify-between">
@@ -41,9 +61,34 @@ const Header = () => {
             <Bell className="h-5 w-5" />
             <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-secondary animate-pulse" />
           </Button>
-          <Button variant="ghost" size="icon" className="hidden sm:flex">
-            <User className="h-5 w-5" />
-          </Button>
+          
+          {user ? (
+            <>
+              <Button variant="ghost" size="icon" className="hidden sm:flex">
+                <User className="h-5 w-5" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleAuthAction}
+                className="hidden sm:flex items-center gap-2 text-destructive hover:text-destructive"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden md:inline">Logout</span>
+              </Button>
+            </>
+          ) : (
+            <Button 
+              variant="gold" 
+              size="sm" 
+              onClick={handleAuthAction}
+              className="hidden sm:flex items-center gap-2"
+            >
+              <LogIn className="h-4 w-4" />
+              <span>Login</span>
+            </Button>
+          )}
+          
           <Button variant="ghost" size="icon" className="md:hidden">
             <Menu className="h-5 w-5" />
           </Button>
