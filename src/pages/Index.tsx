@@ -1,11 +1,37 @@
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import BalanceCard from "@/components/BalanceCard";
 import QuickActions from "@/components/QuickActions";
 import TransactionList from "@/components/TransactionList";
 import BottomNav from "@/components/BottomNav";
+import { useAuth } from "@/hooks/useAuth";
 import { Helmet } from "react-helmet";
 
 const Index = () => {
+  const { user, profile, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  const displayName = profile?.full_name?.split(' ')[0] || 'Student';
+
   return (
     <>
       <Helmet>
@@ -20,7 +46,7 @@ const Index = () => {
           {/* Welcome Message */}
           <div className="animate-fade-in">
             <h2 className="text-2xl font-bold text-foreground">
-              Welcome back, <span className="text-gradient-gold">Student</span>
+              Welcome back, <span className="text-gradient-gold">{displayName}</span>
             </h2>
             <p className="text-muted-foreground text-sm mt-1">
               Here's your financial overview
