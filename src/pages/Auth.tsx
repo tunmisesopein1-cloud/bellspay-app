@@ -46,7 +46,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (user) {
-      navigate("/");
+      navigate("/", { replace: true });
     }
   }, [user, navigate]);
 
@@ -84,7 +84,7 @@ const Auth = () => {
             title: "Welcome back!",
             description: "You have successfully logged in."
           });
-          navigate("/");
+          // Do not navigate here; wait for AuthProvider to update `user` and redirect via the effect.
         }
       } else {
         const result = signupSchema.safeParse({
@@ -133,7 +133,7 @@ const Auth = () => {
             title: "Account Created!",
             description: "Welcome to Bells Bank. You are now logged in."
           });
-          navigate("/");
+          // Do not navigate here; wait for AuthProvider to update `user` and redirect via the effect.
         }
       }
     } catch (error) {
