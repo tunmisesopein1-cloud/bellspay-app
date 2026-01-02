@@ -1,4 +1,5 @@
 import { ArrowUpRight, ArrowDownLeft, ShoppingBag, Wifi, Smartphone, Coffee } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const transactions = [
   {
@@ -82,9 +83,9 @@ const TransactionList = () => {
     <div className="animate-slide-up" style={{ animationDelay: '0.3s', animationFillMode: 'both' }}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-foreground">Recent Transactions</h3>
-        <button className="text-sm font-medium text-secondary hover:text-secondary/80 transition-colors">
+        <Link to="/history" className="text-sm font-medium text-secondary hover:text-secondary/80 transition-colors">
           View All
-        </button>
+        </Link>
       </div>
       
       <div className="bg-card rounded-2xl border border-border shadow-soft overflow-hidden">
