@@ -78,14 +78,14 @@ const transactions = [
 ];
 
 const History = () => {
-  const { user, loading } = useAuth();
+  const { session, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !session) {
       navigate("/auth");
     }
-  }, [user, loading, navigate]);
+  }, [session, loading, navigate]);
 
   if (loading) {
     return (
@@ -95,7 +95,7 @@ const History = () => {
     );
   }
 
-  if (!user) {
+  if (!session) {
     return null;
   }
 
