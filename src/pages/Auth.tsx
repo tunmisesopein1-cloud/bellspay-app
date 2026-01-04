@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import bellsLogo from "@/assets/bells-logo.jpeg";
 import bellsUniversity from "@/assets/bells-university.webp";
 import { Helmet } from "react-helmet";
 
@@ -167,14 +168,24 @@ const Auth = () => {
         <meta name="description" content="Access your Bells Bank account. Login or create a new account to manage your finances." />
       </Helmet>
 
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md border-border/50 bg-card/80 backdrop-blur-xl">
+      <div 
+        className="min-h-screen flex items-center justify-center p-4 relative"
+        style={{
+          backgroundImage: `url(${bellsUniversity})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+        
+        <Card className="w-full max-w-md border-border/50 bg-card/90 backdrop-blur-xl relative z-10">
           <CardHeader className="text-center space-y-4">
             <div className="flex justify-center">
               <img 
-                src={bellsUniversity} 
-                alt="Bells University of Technology" 
-                className="h-20 w-32 rounded-lg object-cover shadow-soft"
+                src={bellsLogo} 
+                alt="Bells Bank" 
+                className="h-16 w-16 rounded-full object-cover shadow-soft"
               />
             </div>
             <CardTitle className="text-2xl font-bold text-foreground">
