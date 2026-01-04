@@ -13,15 +13,15 @@ import { Helmet } from "react-helmet";
 import bellsUniversity from "@/assets/bells-university.webp";
 
 const Profile = () => {
-  const { user, profile, loading } = useAuth();
+  const { session, user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !session) {
       navigate("/auth");
     }
-  }, [user, loading, navigate]);
+  }, [session, loading, navigate]);
 
   if (loading) {
     return (
@@ -31,7 +31,7 @@ const Profile = () => {
     );
   }
 
-  if (!user) {
+  if (!session) {
     return null;
   }
 

@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
 
 const Transfer = () => {
-  const { user, profile, loading } = useAuth();
+  const { session, user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [recipient, setRecipient] = useState("");
@@ -22,10 +22,10 @@ const Transfer = () => {
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !session) {
       navigate("/auth");
     }
-  }, [user, loading, navigate]);
+  }, [session, loading, navigate]);
 
   if (loading) {
     return (
@@ -35,7 +35,7 @@ const Transfer = () => {
     );
   }
 
-  if (!user) {
+  if (!session) {
     return null;
   }
 

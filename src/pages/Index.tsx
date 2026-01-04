@@ -9,14 +9,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { Helmet } from "react-helmet";
 
 const Index = () => {
-  const { user, profile, loading } = useAuth();
+  const { session, user, profile, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !session) {
       navigate("/auth");
     }
-  }, [user, loading, navigate]);
+  }, [session, loading, navigate]);
 
   if (loading) {
     return (
@@ -26,7 +26,7 @@ const Index = () => {
     );
   }
 
-  if (!user) {
+  if (!session) {
     return null;
   }
 
