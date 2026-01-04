@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowLeft, User, Mail, Phone, CreditCard, Save } from "lucide-react";
 import { Helmet } from "react-helmet";
-import { useEffect } from "react";
+import bellsUniversity from "@/assets/bells-university.webp";
 
 const Profile = () => {
   const { user, profile, loading } = useAuth();
@@ -62,11 +62,20 @@ const Profile = () => {
             Back to Dashboard
           </Button>
 
-          {/* Profile Header */}
-          <Card className="border-border/50 bg-card/80 backdrop-blur-xl">
-            <CardContent className="pt-6">
+          {/* Profile Header with Background */}
+          <Card className="border-border/50 overflow-hidden">
+            {/* Background Image */}
+            <div className="relative h-32 w-full">
+              <img 
+                src={bellsUniversity} 
+                alt="Bells University" 
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-card/90 to-transparent" />
+            </div>
+            <CardContent className="relative -mt-12 pb-6">
               <div className="flex flex-col items-center gap-4">
-                <Avatar className="h-24 w-24 border-4 border-secondary">
+                <Avatar className="h-24 w-24 border-4 border-secondary bg-card">
                   <AvatarFallback className="bg-secondary/20 text-secondary text-2xl font-bold">
                     {initials}
                   </AvatarFallback>
