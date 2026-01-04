@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import bellsLogo from "@/assets/bells-logo.jpeg";
+import bellsUniversity from "@/assets/bells-university.webp";
 import { Helmet } from "react-helmet";
 
 const loginSchema = z.object({
@@ -172,9 +172,9 @@ const Auth = () => {
           <CardHeader className="text-center space-y-4">
             <div className="flex justify-center">
               <img 
-                src={bellsLogo} 
-                alt="Bells Bank" 
-                className="h-16 w-16 rounded-full object-cover shadow-soft"
+                src={bellsUniversity} 
+                alt="Bells University of Technology" 
+                className="h-20 w-32 rounded-lg object-cover shadow-soft"
               />
             </div>
             <CardTitle className="text-2xl font-bold text-foreground">
