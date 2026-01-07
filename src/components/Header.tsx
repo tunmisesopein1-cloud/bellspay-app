@@ -19,18 +19,18 @@ import {
 } from "@/components/ui/popover";
 
 const Header = () => {
-  const { user, signOut } = useAuth();
+  const { session, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleAuthAction = async () => {
-    if (user) {
+    if (session) {
       await signOut();
       toast({
         title: "Logged Out",
-        description: "You have been successfully logged out."
+        description: "You have been successfully logged out.",
       });
       navigate("/auth");
     } else {
@@ -43,6 +43,8 @@ const Header = () => {
     { label: "Transfers", path: "/transfer" },
     { label: "Cards", path: "/cards" },
     { label: "History", path: "/history" },
+    { label: "About", path: "/about" },
+    { label: "Contact", path: "/contact" },
   ];
 
   const notifications = [
@@ -109,19 +111,19 @@ const Header = () => {
             </PopoverContent>
           </Popover>
           
-          {user ? (
+          {session ? (
             <>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="hidden sm:flex"
                 onClick={() => navigate("/profile")}
               >
                 <User className="h-5 w-5" />
               </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleAuthAction}
                 className="hidden sm:flex items-center gap-2 text-destructive hover:text-destructive"
               >
@@ -130,9 +132,9 @@ const Header = () => {
               </Button>
             </>
           ) : (
-            <Button 
-              variant="gold" 
-              size="sm" 
+            <Button
+              variant="gold"
+              size="sm"
               onClick={handleAuthAction}
               className="hidden sm:flex items-center gap-2"
             >
@@ -167,7 +169,7 @@ const Header = () => {
                     {link.label}
                   </Link>
                 ))}
-                {user && (
+                {session && (
                   <>
                     <Link
                       to="/profile"
@@ -180,8 +182,8 @@ const Header = () => {
                     >
                       Profile
                     </Link>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       onClick={() => {
                         handleAuthAction();
                         setMobileMenuOpen(false);
@@ -193,9 +195,9 @@ const Header = () => {
                     </Button>
                   </>
                 )}
-                {!user && (
-                  <Button 
-                    variant="gold" 
+                {!session && (
+                  <Button
+                    variant="gold"
                     onClick={() => {
                       navigate("/auth");
                       setMobileMenuOpen(false);
