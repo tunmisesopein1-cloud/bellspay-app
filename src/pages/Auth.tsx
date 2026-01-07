@@ -41,15 +41,15 @@ const Auth = () => {
   const [matricNumber, setMatricNumber] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
 
-  const { signIn, signUp, user, loading } = useAuth();
+  const { signIn, signUp, session, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && session) {
       navigate("/", { replace: true });
     }
-  }, [user, loading, navigate]);
+  }, [session, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,7 +157,7 @@ const Auth = () => {
   }
 
   // If a session exists, the effect above will redirect.
-  if (user) {
+  if (session) {
     return null;
   }
 
