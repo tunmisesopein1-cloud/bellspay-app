@@ -10,10 +10,9 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Send, User, Banknote } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
 
 const Transfer = () => {
-  const { session, user, profile, loading } = useAuth();
+  const { profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [recipient, setRecipient] = useState("");
@@ -21,32 +20,14 @@ const Transfer = () => {
   const [description, setDescription] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
-  useEffect(() => {
-    if (!loading && !session) {
-      navigate("/auth");
-    }
-  }, [session, loading, navigate]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return null;
-  }
-
   const handleTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!recipient.trim()) {
       toast({
         title: "Error",
         description: "Please enter a recipient matric number or phone number",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -56,7 +37,7 @@ const Transfer = () => {
       toast({
         title: "Error",
         description: "Please enter a valid amount",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -65,18 +46,18 @@ const Transfer = () => {
       toast({
         title: "Insufficient Balance",
         description: "You don't have enough funds for this transfer",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     setIsProcessing(true);
-    
+
     // Simulate transfer processing
     setTimeout(() => {
       toast({
         title: "Transfer Successful!",
-        description: `₦${transferAmount.toLocaleString("en-NG", { minimumFractionDigits: 2 })} sent to ${recipient}`
+        description: `₦${transferAmount.toLocaleString("en-NG", { minimumFractionDigits: 2 })} sent to ${recipient}`,
       });
       setRecipient("");
       setAmount("");
@@ -108,9 +89,7 @@ const Transfer = () => {
 
           <div>
             <h2 className="text-2xl font-bold text-foreground">Send Money</h2>
-            <p className="text-muted-foreground text-sm mt-1">
-              Transfer funds to other Bells Bank users
-            </p>
+            <p className="text-muted-foreground text-sm mt-1">Transfer funds to other Bells Bank users</p>
           </div>
 
           {/* Balance Card */}
@@ -169,12 +148,7 @@ const Transfer = () => {
                   />
                 </div>
 
-                <Button
-                  type="submit"
-                  variant="gold"
-                  className="w-full"
-                  disabled={isProcessing}
-                >
+                <Button type="submit" variant="gold" className="w-full" disabled={isProcessing}>
                   {isProcessing ? "Processing..." : "Send Money"}
                 </Button>
               </form>
@@ -189,3 +163,4 @@ const Transfer = () => {
 };
 
 export default Transfer;
+

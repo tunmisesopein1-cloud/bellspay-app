@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
@@ -13,33 +13,16 @@ import { Helmet } from "react-helmet";
 import bellsUniversity from "@/assets/bells-university.webp";
 
 const Profile = () => {
-  const { session, user, profile, loading } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
 
-  useEffect(() => {
-    if (!loading && !session) {
-      navigate("/auth");
-    }
-  }, [session, loading, navigate]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return null;
-  }
-
-  const initials = profile?.full_name
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase() || "U";
+  const initials =
+    profile?.full_name
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase() || "U";
 
   return (
     <>
@@ -66,11 +49,7 @@ const Profile = () => {
           <Card className="border-border/50 overflow-hidden">
             {/* Background Image */}
             <div className="relative h-32 w-full">
-              <img 
-                src={bellsUniversity} 
-                alt="Bells University" 
-                className="w-full h-full object-cover"
-              />
+              <img src={bellsUniversity} alt="Bells University" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-card/90 to-transparent" />
             </div>
             <CardContent className="relative -mt-12 pb-6">
@@ -92,11 +71,7 @@ const Profile = () => {
           <Card className="border-border/50 bg-card/80 backdrop-blur-xl">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg font-semibold">Profile Information</CardTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditing(!isEditing)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
                 {isEditing ? "Cancel" : "Edit"}
               </Button>
             </CardHeader>
@@ -166,3 +141,4 @@ const Profile = () => {
 };
 
 export default Profile;
+
