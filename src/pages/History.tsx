@@ -1,12 +1,10 @@
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowUpRight, ArrowDownLeft, ShoppingBag, Wifi, Zap } from "lucide-react";
 import { Helmet } from "react-helmet";
-import { useEffect } from "react";
 
 const transactions = [
   {
@@ -78,26 +76,7 @@ const transactions = [
 ];
 
 const History = () => {
-  const { session, loading } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!loading && !session) {
-      navigate("/auth");
-    }
-  }, [session, loading, navigate]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return null;
-  }
 
   const formatAmount = (amount: number) => {
     const absAmount = Math.abs(amount);
@@ -167,3 +146,4 @@ const History = () => {
 };
 
 export default History;
+

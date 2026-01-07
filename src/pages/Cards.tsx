@@ -6,33 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, CreditCard, Eye, EyeOff, Copy, Lock, Unlock } from "lucide-react";
 import { Helmet } from "react-helmet";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 const Cards = () => {
-  const { session, profile, loading } = useAuth();
+  const { profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showCardNumber, setShowCardNumber] = useState(false);
   const [isCardLocked, setIsCardLocked] = useState(false);
-
-  useEffect(() => {
-    if (!loading && !session) {
-      navigate("/auth");
-    }
-  }, [session, loading, navigate]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return null;
-  }
 
   const cardNumber = "5399 **** **** 7823";
   const fullCardNumber = "5399 8234 5678 7823";
@@ -43,7 +25,7 @@ const Cards = () => {
     navigator.clipboard.writeText(fullCardNumber.replace(/\s/g, ""));
     toast({
       title: "Copied!",
-      description: "Card number copied to clipboard"
+      description: "Card number copied to clipboard",
     });
   };
 
@@ -51,9 +33,9 @@ const Cards = () => {
     setIsCardLocked(!isCardLocked);
     toast({
       title: isCardLocked ? "Card Unlocked" : "Card Locked",
-      description: isCardLocked 
-        ? "Your card is now active for transactions" 
-        : "Your card is now locked. No transactions can be made."
+      description: isCardLocked
+        ? "Your card is now active for transactions"
+        : "Your card is now locked. No transactions can be made.",
     });
   };
 
@@ -85,7 +67,11 @@ const Cards = () => {
 
           {/* Virtual Card */}
           <div className="relative">
-            <div className={`rounded-2xl p-6 bg-gradient-to-br from-primary via-primary/90 to-secondary aspect-[1.6/1] max-w-md mx-auto shadow-lg ${isCardLocked ? "opacity-60" : ""}`}>
+            <div
+              className={`rounded-2xl p-6 bg-gradient-to-br from-primary via-primary/90 to-secondary aspect-[1.6/1] max-w-md mx-auto shadow-lg ${
+                isCardLocked ? "opacity-60" : ""
+              }`}
+            >
               <div className="flex flex-col justify-between h-full text-primary-foreground">
                 <div className="flex justify-between items-start">
                   <div>
@@ -192,3 +178,4 @@ const Cards = () => {
 };
 
 export default Cards;
+
