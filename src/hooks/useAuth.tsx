@@ -30,7 +30,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [initialized, setInitialized] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
@@ -46,6 +45,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     setProfile(data);
+  };
+
+  const syncSession = async () => {
+    const { data } = await supabase.auth.getSession();
+    const nextSession = data.session;
+
+    setSession(nextSession);
+    setUser(nextSession?.user ?? null);
+
+    if (nextSession?.user) {
+      await fetchProfile(nextSession.user.id);
+    } else {
+      setProfile(null);
+    }
+
+    return nextSession;
   };
 
   useEffect(() => {
@@ -92,22 +107,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // resolves, which would make protected routes briefly see `session=null` and
       // bounce users back to /auth.
       if (event === 'SIGNED_OUT') {
-        setInitialized(true);
         setLoading(false);
       }
     });
 
     // THEN check for existing session (this is our "auth is ready" signal)
-    supabase.auth
-      .getSession()
-      .then(({ data: { session } }) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          fetchProfile(session.user.id);
-        }
-
-        setInitialized(true);
+    syncSession()
+      .then(() => {
         setLoading(false);
 
         // Refresh a bit before expiry (session is 60m by default). Keep it simple.
@@ -117,7 +123,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       })
       .catch(() => {
         // If getSession fails for any reason, allow app to render and routes to decide.
-        setInitialized(true);
         setLoading(false);
       });
 
@@ -142,32 +147,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     password: string,
     metadata: { full_name: string; matric_number: string; phone_number: string }
   ) => {
-    const redirectUrl = `${window.location.origin}/`;
+    setLoading(true);
+    try {
+      const redirectUrl = `${window.location.origin}/`;
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: metadata
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: metadata,
+        },
+      });
+
+      // Ensure we have a session in state before any navigation/protected route runs.
+      if (!error) {
+        await syncSession();
       }
-    });
 
-    return { error };
+      return { error };
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    return { error };
+      // Ensure we have a session in state before any navigation/protected route runs.
+      if (!error) {
+        await syncSession();
+      }
+
+      return { error };
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setProfile(null);
+    setLoading(true);
+    try {
+      await supabase.auth.signOut();
+      setProfile(null);
+      setSession(null);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -184,3 +216,4 @@ export const useAuth = () => {
   }
   return context;
 };
+
