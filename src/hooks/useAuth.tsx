@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -63,84 +63,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return nextSession;
   };
 
+  // Avoid double-initialization in dev (React.StrictMode mounts/effects twice).
+  const didInit = useRef(false);
+
   useEffect(() => {
+    if (didInit.current) return;
+    didInit.current = true;
+
     setLoading(true);
 
-    // Prevent refresh-token stampedes by taking control of refresh scheduling.
-    // Supabase rotates refresh tokens; concurrent refreshes (e.g., tab wakeups) can revoke tokens and log users out.
-    supabase.auth.stopAutoRefresh();
-
-    let refreshTimer: number | undefined;
-    let refreshing = false;
-
-    const safeRefreshSession = async () => {
-      if (refreshing) return;
-      refreshing = true;
-      try {
-        // refreshSession updates the stored session (and will emit auth events)
-        await supabase.auth.refreshSession();
-      } catch {
-        // Intentionally swallow refresh errors here; a transient 429/network issue
-        // shouldn't immediately kick the user back to /auth.
-      } finally {
-        refreshing = false;
-      }
-    };
-
-    // Set up auth state listener FIRST
+    // Listen FIRST so we never miss a sign-in/sign-out event.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
 
-      // Defer profile fetch with setTimeout to avoid deadlock
-      if (session?.user) {
-        setTimeout(() => {
-          fetchProfile(session.user.id);
-        }, 0);
+      // Never call other supabase functions directly in this callback.
+      if (nextSession?.user) {
+        setTimeout(() => fetchProfile(nextSession.user.id), 0);
       } else {
         setProfile(null);
       }
 
-      // Note: don't flip `loading` here. INITIAL_SESSION can fire before getSession()
-      // resolves, which would make protected routes briefly see `session=null` and
-      // bounce users back to /auth.
       if (event === 'SIGNED_OUT') {
         setLoading(false);
       }
     });
 
-    // THEN check for existing session (this is our "auth is ready" signal)
+    // Then initialize from persisted session (localStorage).
     syncSession()
-      .then(() => {
-        setLoading(false);
-
-        // Refresh a bit before expiry (session is 60m by default). Keep it simple.
-        refreshTimer = window.setInterval(() => {
-          safeRefreshSession();
-        }, 50 * 60 * 1000);
-      })
       .catch(() => {
-        // If getSession fails for any reason, allow app to render and routes to decide.
-        setLoading(false);
-      });
-
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        safeRefreshSession();
-      }
-    };
-    document.addEventListener('visibilitychange', onVisibility);
+        // If init fails, we still let routes decide; user can log in again.
+      })
+      .finally(() => setLoading(false));
 
     return () => {
-      if (refreshTimer) window.clearInterval(refreshTimer);
-      document.removeEventListener('visibilitychange', onVisibility);
       subscription.unsubscribe();
-      // Resume default behavior if other parts of the app rely on it.
-      supabase.auth.startAutoRefresh();
     };
   }, []);
+
 
   const signUp = async (
     email: string,
