@@ -48,22 +48,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    // Prevent refresh-token stampedes by taking control of refresh scheduling.
+    // Supabase rotates refresh tokens; concurrent refreshes (e.g., tab wakeups) can revoke tokens and log users out.
+    supabase.auth.stopAutoRefresh();
 
-        // Defer profile fetch with setTimeout to avoid deadlock
-        if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-        }
+    let refreshTimer: number | undefined;
+    let refreshing = false;
+
+    const safeRefreshSession = async () => {
+      if (refreshing) return;
+      refreshing = true;
+      try {
+        // refreshSession updates the stored session (and will emit auth events)
+        await supabase.auth.refreshSession();
+      } catch {
+        // Intentionally swallow refresh errors here; a transient 429/network issue
+        // shouldn't immediately kick the user back to /auth.
+      } finally {
+        refreshing = false;
       }
-    );
+    };
+
+    // Set up auth state listener FIRST
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      // Defer profile fetch with setTimeout to avoid deadlock
+      if (session?.user) {
+        setTimeout(() => {
+          fetchProfile(session.user.id);
+        }, 0);
+      } else {
+        setProfile(null);
+      }
+
+      // Once we receive any auth event, we can safely stop the initial loading state.
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        setLoading(false);
+      }
+    });
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -73,9 +99,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         fetchProfile(session.user.id);
       }
       setLoading(false);
+
+      // Refresh a bit before expiry (session is 60m by default). Keep it simple.
+      refreshTimer = window.setInterval(() => {
+        safeRefreshSession();
+      }, 50 * 60 * 1000);
     });
 
-    return () => subscription.unsubscribe();
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        safeRefreshSession();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      if (refreshTimer) window.clearInterval(refreshTimer);
+      document.removeEventListener('visibilitychange', onVisibility);
+      subscription.unsubscribe();
+      // Resume default behavior if other parts of the app rely on it.
+      supabase.auth.startAutoRefresh();
+    };
   }, []);
 
   const signUp = async (
