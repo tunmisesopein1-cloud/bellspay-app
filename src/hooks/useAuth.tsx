@@ -30,6 +30,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [initialized, setInitialized] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
@@ -48,6 +49,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    setLoading(true);
+
     // Prevent refresh-token stampedes by taking control of refresh scheduling.
     // Supabase rotates refresh tokens; concurrent refreshes (e.g., tab wakeups) can revoke tokens and log users out.
     supabase.auth.stopAutoRefresh();
@@ -85,26 +88,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setProfile(null);
       }
 
-      // Once we receive any auth event, we can safely stop the initial loading state.
-      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+      // Note: don't flip `loading` here. INITIAL_SESSION can fire before getSession()
+      // resolves, which would make protected routes briefly see `session=null` and
+      // bounce users back to /auth.
+      if (event === 'SIGNED_OUT') {
+        setInitialized(true);
         setLoading(false);
       }
     });
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-      setLoading(false);
+    // THEN check for existing session (this is our "auth is ready" signal)
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          fetchProfile(session.user.id);
+        }
 
-      // Refresh a bit before expiry (session is 60m by default). Keep it simple.
-      refreshTimer = window.setInterval(() => {
-        safeRefreshSession();
-      }, 50 * 60 * 1000);
-    });
+        setInitialized(true);
+        setLoading(false);
+
+        // Refresh a bit before expiry (session is 60m by default). Keep it simple.
+        refreshTimer = window.setInterval(() => {
+          safeRefreshSession();
+        }, 50 * 60 * 1000);
+      })
+      .catch(() => {
+        // If getSession fails for any reason, allow app to render and routes to decide.
+        setInitialized(true);
+        setLoading(false);
+      });
 
     const onVisibility = () => {
       if (document.visibilityState === 'visible') {
