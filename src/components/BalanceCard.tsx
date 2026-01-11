@@ -1,10 +1,13 @@
 import { Eye, EyeOff, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 const BalanceCard = () => {
   const [showBalance, setShowBalance] = useState(true);
-  const balance = 2547890.50;
+  const { profile } = useAuth();
+  
+  const balance = profile?.account_balance ?? 0;
   const currency = "₦";
 
   const formatBalance = (amount: number) => {
@@ -13,6 +16,11 @@ const BalanceCard = () => {
       maximumFractionDigits: 2,
     }).format(amount);
   };
+
+  // Generate account number from matric number (last 4 digits)
+  const accountNumber = profile?.matric_number 
+    ? `**** ${profile.matric_number.slice(-4)}`
+    : "**** ****";
 
   return (
     <div className="relative overflow-hidden rounded-3xl gradient-card p-6 sm:p-8 shadow-gold animate-slide-up">
@@ -65,7 +73,7 @@ const BalanceCard = () => {
           </div>
           <div className="text-right">
             <p className="text-xs text-primary/50">Account Number</p>
-            <p className="text-sm font-medium text-primary/80">**** 4589</p>
+            <p className="text-sm font-medium text-primary/80">{accountNumber}</p>
           </div>
         </div>
       </div>
