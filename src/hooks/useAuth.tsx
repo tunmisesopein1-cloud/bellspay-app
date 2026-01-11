@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -22,6 +22,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, metadata: { full_name: string; matric_number: string; phone_number: string }) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,8 +32,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Track if we're in an auth operation to prevent premature loading=false
+  const authOperationRef = useRef(false);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -45,23 +49,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     setProfile(data);
-  };
+  }, []);
 
-  const syncSession = async () => {
-    const { data } = await supabase.auth.getSession();
-    const nextSession = data.session;
-
-    setSession(nextSession);
-    setUser(nextSession?.user ?? null);
-
-    if (nextSession?.user) {
-      await fetchProfile(nextSession.user.id);
-    } else {
-      setProfile(null);
+  const refreshProfile = useCallback(async () => {
+    if (user?.id) {
+      await fetchProfile(user.id);
     }
-
-    return nextSession;
-  };
+  }, [user?.id, fetchProfile]);
 
   // Avoid double-initialization in dev (React.StrictMode mounts/effects twice).
   const didInit = useRef(false);
@@ -76,6 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      // Update session and user state synchronously
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
 
@@ -86,34 +81,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setProfile(null);
       }
 
-      if (event === 'SIGNED_OUT') {
+      // Only set loading to false if we're not in an auth operation
+      // This prevents race conditions during signIn/signUp
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (!authOperationRef.current) {
+          setLoading(false);
+        }
+      } else if (event === 'SIGNED_OUT') {
         setLoading(false);
       }
     });
 
     // Then initialize from persisted session (localStorage).
-    syncSession()
+    supabase.auth.getSession()
+      .then(({ data }) => {
+        const existingSession = data.session;
+        setSession(existingSession);
+        setUser(existingSession?.user ?? null);
+        
+        if (existingSession?.user) {
+          fetchProfile(existingSession.user.id);
+        }
+      })
       .catch(() => {
         // If init fails, we still let routes decide; user can log in again.
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+      });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
-
+  }, [fetchProfile]);
 
   const signUp = async (
     email: string,
     password: string,
     metadata: { full_name: string; matric_number: string; phone_number: string }
   ) => {
+    authOperationRef.current = true;
     setLoading(true);
+    
     try {
       const redirectUrl = `${window.location.origin}/`;
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -122,32 +135,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       });
 
-      // Ensure we have a session in state before any navigation/protected route runs.
-      if (!error) {
-        await syncSession();
+      if (!error && data.session) {
+        // Immediately set the session from the response
+        setSession(data.session);
+        setUser(data.session.user);
+        
+        // Fetch profile in background
+        if (data.session.user) {
+          fetchProfile(data.session.user.id);
+        }
       }
 
       return { error };
     } finally {
+      authOperationRef.current = false;
       setLoading(false);
     }
   };
 
   const signIn = async (email: string, password: string) => {
+    authOperationRef.current = true;
     setLoading(true);
+    
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      // Ensure we have a session in state before any navigation/protected route runs.
-      if (!error) {
-        await syncSession();
+      if (!error && data.session) {
+        // Immediately set the session from the response
+        setSession(data.session);
+        setUser(data.session.user);
+        
+        // Fetch profile in background
+        if (data.session.user) {
+          fetchProfile(data.session.user.id);
+        }
       }
 
       return { error };
     } finally {
+      authOperationRef.current = false;
       setLoading(false);
     }
   };
@@ -165,7 +194,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, signUp, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
